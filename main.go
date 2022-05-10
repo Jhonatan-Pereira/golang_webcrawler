@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -16,10 +17,19 @@ type VisitedLink struct {
 	VisitedDate time.Time `bson:"visited_date"`
 }
 
-func main() {
-	visitLink("https://aprendagolang.com.br")
+var link string
 
-	// fmt.Println(len(links))
+func init() {
+	flag.StringVar(&link, "url", "https://aprendagolang.com.br", "url para iniciar visitas")
+}
+
+func main() {
+	flag.Parse()
+
+	c := make(chan bool)
+	go visitLink(link)
+
+	<-c
 }
 
 func visitLink(link string) {
@@ -32,9 +42,9 @@ func visitLink(link string) {
 	}
 	defer resp.Body.Close()
 
-	// if resp.StatusCode != http.StatusOK {
-	// 	panic(fmt.Sprintf("status diferente de 200: %d", resp.StatusCode))
-	// }
+	if resp.StatusCode != http.StatusOK {
+		fmt.Printf("[error] status diferente de 200: %d\n", resp.StatusCode)
+	}
 
 	doc, err := html.Parse(resp.Body)
 	if err != nil {
@@ -54,7 +64,7 @@ func extractLinks(node *html.Node) {
 			}
 
 			link, err := url.Parse(attr.Val)
-			if err != nil || link.Scheme == "" {
+			if err != nil || link.Scheme == "" || link.Scheme == "mailto" {
 				continue
 			}
 
@@ -71,7 +81,7 @@ func extractLinks(node *html.Node) {
 
 			db.Insert("links", visitedLink)
 
-			visitLink(link.String())
+			go visitLink(link.String())
 		}
 	}
 

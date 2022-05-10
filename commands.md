@@ -22,4 +22,7 @@ show collections;
 
 db.links.count({});
 db.links.find({});
+db.links.drop({});
+
+go run main.go -url=https://linuxtips.com.br
 ```
