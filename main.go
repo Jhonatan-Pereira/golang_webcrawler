@@ -4,16 +4,38 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"time"
+	"web_crawler/db"
 
 	"golang.org/x/net/html"
 )
 
-var links []string
+var (
+	visited map[string]bool = map[string]bool{}
+)
+
+type VisitedLink struct {
+	Website     string    `bson:"website"`
+	Link        string    `bson:"link"`
+	VisitedDate time.Time `bson:"visited_date"`
+}
 
 func main() {
-	url := "https://aprendagolang.com.br"
+	visitLink("https://aprendagolang.com.br")
 
-	resp, err := http.Get(url)
+	// fmt.Println(len(links))
+}
+
+func visitLink(link string) {
+	if ok := visited[link]; ok {
+		return
+	}
+
+	visited[link] = true
+
+	fmt.Println(link)
+
+	resp, err := http.Get(link)
 	if err != nil {
 		panic(err)
 	}
@@ -29,8 +51,6 @@ func main() {
 	}
 
 	extractLinks(doc)
-
-	fmt.Println(len(links))
 }
 
 func extractLinks(node *html.Node) {
@@ -48,7 +68,17 @@ func extractLinks(node *html.Node) {
 			}
 
 			// fmt.Println(link.String())
-			links = append(links, link.String())
+			// links = append(links, link.String())
+
+			visitedLink := VisitedLink{
+				Website:     link.Host,
+				Link:        link.String(),
+				VisitedDate: time.Now(),
+			}
+
+			db.Insert("links", visitedLink)
+
+			visitLink(link.String())
 		}
 	}
 
