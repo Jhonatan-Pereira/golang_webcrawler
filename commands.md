@@ -25,4 +25,7 @@ db.links.find({});
 db.links.drop({});
 
 go run main.go -url=https://linuxtips.com.br
+
+go run main.go -action=website
+go run main.go -action=webcrawler
 ```

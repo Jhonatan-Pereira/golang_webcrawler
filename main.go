@@ -7,29 +7,35 @@ import (
 	"net/url"
 	"time"
 	"web_crawler/db"
+	"web_crawler/website"
 
 	"golang.org/x/net/html"
 )
 
-type VisitedLink struct {
-	Website     string    `bson:"website"`
-	Link        string    `bson:"link"`
-	VisitedDate time.Time `bson:"visited_date"`
-}
-
-var link string
+var (
+	link   string
+	action string
+)
 
 func init() {
 	flag.StringVar(&link, "url", "https://aprendagolang.com.br", "url para iniciar visitas")
+	flag.StringVar(&action, "action", "website", "qual serviço iniciar")
 }
 
 func main() {
 	flag.Parse()
 
-	c := make(chan bool)
-	go visitLink(link)
+	switch action {
+	case "website":
+		website.Run()
+	case "webcrawler":
+		c := make(chan bool)
+		go visitLink(link)
+		<-c
+	default:
+		fmt.Printf("action '%s' não reconhecida", action)
+	}
 
-	<-c
 }
 
 func visitLink(link string) {
@@ -68,12 +74,12 @@ func extractLinks(node *html.Node) {
 				continue
 			}
 
-			if db.VisitedLink(link.String()) {
+			if db.CheckVisitedLink(link.String()) {
 				fmt.Printf("link já visitado: %s\n", link)
 				continue
 			}
 
-			visitedLink := VisitedLink{
+			visitedLink := db.VisitedLink{
 				Website:     link.Host,
 				Link:        link.String(),
 				VisitedDate: time.Now(),
